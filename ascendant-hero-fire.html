@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
+<title>Ascendant Hero — Arrow Fire v1</title>
+<style>
+  :root{
+    --ink:#060b1c;
+    --card:#0a1128;
+    --gold:#e8b968;
+    --gold-hi:#ffe9bd;
+    --gold-dim:rgba(232,185,104,.35);
+  }
+  *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{height:100%;background:var(--ink);overflow:hidden}
+  body{
+    font-family:Georgia,'Times New Roman',serif;color:var(--gold);
+    display:flex;flex-direction:column;align-items:center;justify-content:center;
+    padding:max(14px,env(safe-area-inset-top)) 14px max(14px,env(safe-area-inset-bottom));
+    background:radial-gradient(120% 90% at 50% 0%, #0d1533 0%, var(--ink) 62%);
+  }
+
+  .wordmark{letter-spacing:.34em;font-size:clamp(15px,4.2vw,20px);color:var(--gold);margin-bottom:2px}
+  .tagline{font-style:italic;font-size:clamp(10px,2.8vw,12px);letter-spacing:.12em;color:var(--gold-dim);margin-bottom:14px}
+
+  /* ---- hero card ---- */
+  .card{
+    position:relative;width:min(94vw,560px);
+    border:1px solid rgba(232,185,104,.30);border-radius:18px;
+    overflow:hidden;background:var(--card);
+    box-shadow:0 0 60px rgba(20,40,110,.35), inset 0 0 40px rgba(0,0,0,.5);
+  }
+  .stage{position:relative;width:100%;aspect-ratio:719/406;overflow:hidden}
+  .heroWrap{position:absolute;inset:0;will-change:transform;transform-origin:50% 55%;
+    animation:breathe 9s ease-in-out infinite;transition:transform .35s cubic-bezier(.22,1,.36,1)}
+  .heroWrap img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block}
+  @keyframes breathe{0%,100%{transform:scale(1.015)}50%{transform:scale(1.045)}}
+  .stage.tension .heroWrap{transform:scale(.985)}
+  .stage.recoil  .heroWrap{transform:scale(1.03)}
+
+  /* ---- overlay coordinate layer (matches image box) ---- */
+  .fx{position:absolute;inset:0;pointer-events:none}
+
+  /* the living arrow — positioned at the nock point, rotated to the shaft angle,
+     then translated along its own local X axis for draw / flight */
+  .arrow{
+    position:absolute;left:0;top:0;height:0;
+    transform-origin:0 50%;
+    opacity:0;will-change:transform,opacity;
+  }
+  .arrow svg{position:absolute;left:0;top:50%;transform:translateY(-50%);overflow:visible;display:block}
+
+  /* comet trail lives behind the arrow, stretches on release */
+  .trail{
+    position:absolute;left:0;top:0;height:3px;transform-origin:0 50%;
+    background:linear-gradient(90deg,rgba(255,233,189,0) 0%,rgba(255,233,189,.85) 70%,#fff 100%);
+    filter:blur(.6px) drop-shadow(0 0 6px rgba(255,215,140,.9));
+    border-radius:2px;opacity:0;will-change:transform,opacity;
+  }
+
+  /* charge glow at the arrowhead */
+  .charge{
+    position:absolute;width:120px;height:120px;border-radius:50%;
+    transform:translate(-50%,-50%) scale(.2);
+    background:radial-gradient(circle,rgba(255,238,200,.95) 0%,rgba(255,205,120,.45) 34%,rgba(255,180,80,0) 70%);
+    opacity:0;will-change:transform,opacity;mix-blend-mode:screen;
+  }
+
+  /* full-frame release flash */
+  .flash{
+    position:absolute;inset:0;opacity:0;mix-blend-mode:screen;
+    background:radial-gradient(circle at var(--fx,77%) var(--fy,19%),rgba(255,240,210,.9) 0%,rgba(255,205,120,.35) 22%,rgba(0,0,0,0) 55%);
+    will-change:opacity;
+  }
+
+  .spark{position:absolute;width:4px;height:4px;border-radius:50%;
+    background:#ffe9bd;box-shadow:0 0 8px 2px rgba(255,210,130,.9);
+    mix-blend-mode:screen;will-change:transform,opacity}
+
+  canvas.embers{position:absolute;inset:0;width:100%;height:100%;mix-blend-mode:screen}
+
+  /* ---- title block, matches the page ---- */
+  .titleBlock{padding:16px 18px 18px;text-align:center;border-top:1px solid rgba(232,185,104,.18)}
+  .sign{font-size:clamp(24px,7vw,34px);letter-spacing:.22em;color:#f3d9a4;
+    text-shadow:0 0 22px rgba(232,185,104,.35)}
+  .sub{font-size:clamp(11px,3vw,13px);letter-spacing:.42em;margin-top:6px;color:var(--gold-dim)}
+
+  .hint{margin-top:16px;font-size:11px;letter-spacing:.28em;color:rgba(232,185,104,.5);
+    text-transform:uppercase;animation:hintPulse 3.4s ease-in-out infinite}
+  @keyframes hintPulse{0%,100%{opacity:.45}50%{opacity:.9}}
+
+  @media (prefers-reduced-motion: reduce){
+    .heroWrap{animation:none}
+    .hint{animation:none}
+  }
+</style>
+</head>
+<body>
+
+<div class="wordmark">eMERGE</div>
+<div class="tagline">Discover who you are</div>
+
+<div class="card" id="card">
+  <div class="stage" id="stage">
+    <div class="heroWrap" id="heroWrap"><img id="heroImg" alt="Sagittarius"></div>
+    <canvas class="embers" id="embers"></canvas>
+    <div class="fx" id="fx">
+      <div class="trail" id="trail"></div>
+      <div class="arrow" id="arrow"></div>
+      <div class="charge" id="charge"></div>
+      <div class="flash" id="flash"></div>
+    </div>
+  </div>
+  <div class="titleBlock">
+    <div class="sign">SAGITTARIUS</div>
+    <div class="sub">ASCENDANT</div>
+  </div>
+</div>
+
+<div class="hint">Tap the sky to fire</div>
+
+<script>
+/* ================= CONFIG — tune per sign / per asset ================= */
+const HERO = {
+  img: 'hero-sag.jpg',        // swap for the production hero asset (or a Kling/Runway loop later)
+  // all positions are fractions of the image box
+  anchor: { x: 0.770, y: 0.190 }, // painted arrowhead position — flight launches from here
+  angleDeg: -10,                  // shaft angle: negative = aiming up-right
+  shaftFrac: 0.30,                // arrow length as a fraction of image width
+  drawFrac:  0.065,               // how far the arrow pulls back
+  loopMs: 8200,                   // auto-fire interval
+  firstShotMs: 2400               // first shot after load
+};
+/* ===================================================================== */
+
+const stage  = document.getElementById('stage');
+const fx     = document.getElementById('fx');
+const arrowEl= document.getElementById('arrow');
+const trail  = document.getElementById('trail');
+const charge = document.getElementById('charge');
+const flash  = document.getElementById('flash');
+const heroImg= document.getElementById('heroImg');
+heroImg.src  = HERO.img;
+
+const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+/* build the arrow SVG at the right pixel size for the current stage width */
+let W=0,H=0,shaftPx=0,drawPx=0,nock={x:0,y:0};
+function layout(){
+  const r = stage.getBoundingClientRect();
+  W=r.width; H=r.height;
+  shaftPx = HERO.shaftFrac * W;
+  drawPx  = HERO.drawFrac  * W;
+
+  const rad = HERO.angleDeg * Math.PI/180;
+  // anchor is the arrowHEAD; nock sits one shaft-length behind it along the axis
+  nock.x = HERO.anchor.x*W - Math.cos(rad)*shaftPx;
+  nock.y = HERO.anchor.y*H - Math.sin(rad)*shaftPx;
+
+  arrowEl.style.left = nock.x+'px';
+  arrowEl.style.top  = nock.y+'px';
+  arrowEl.innerHTML  = arrowSVG(shaftPx);
+
+  trail.style.left = nock.x+'px';
+  trail.style.top  = nock.y+'px';
+  trail.style.transform = `rotate(${HERO.angleDeg}deg) scaleX(0)`;
+
+  charge.style.left = (HERO.anchor.x*W)+'px';
+  charge.style.top  = (HERO.anchor.y*H)+'px';
+  flash.style.setProperty('--fx',(HERO.anchor.x*100)+'%');
+  flash.style.setProperty('--fy',(HERO.anchor.y*100)+'%');
+
+  setArrow(0,0); // rest
+}
+function arrowSVG(len){
+  const h = Math.max(10, len*0.06);
+  return `<svg width="${len+18}" height="${h*4}" viewBox="0 0 ${len+18} ${h*4}">
+    <defs>
+      <linearGradient id="sh" x1="0" y1="0" x2="1" y2="0">
+        <stop offset="0" stop-color="#e8b968" stop-opacity=".25"/>
+        <stop offset=".55" stop-color="#f6d79a"/>
+        <stop offset="1" stop-color="#ffffff"/>
+      </linearGradient>
+    </defs>
+    <g transform="translate(0,${h*2})" filter="drop-shadow(0 0 5px rgba(255,214,140,.95))">
+      <!-- fletching -->
+      <path d="M2 0 L${h*1.6} ${-h*0.9} M2 0 L${h*1.6} ${h*0.9} M${h*1.1} 0 L${h*2.7} ${-h*0.9} M${h*1.1} 0 L${h*2.7} ${h*0.9}"
+            stroke="#e8b968" stroke-width="1.6" stroke-linecap="round" opacity=".9"/>
+      <!-- shaft -->
+      <line x1="2" y1="0" x2="${len}" y2="0" stroke="url(#sh)" stroke-width="2.4" stroke-linecap="round"/>
+      <!-- head -->
+      <path d="M${len} 0 L${len-h*1.5} ${-h*0.75} L${len-h*0.6} 0 L${len-h*1.5} ${h*0.75} Z" fill="#fff2d6"/>
+    </g>
+  </svg>`;
+}
+/* dx = travel along the shaft axis (negative = drawn back) */
+function setArrow(dx, opacity, ms=0, ease='cubic-bezier(.22,1,.36,1)'){
+  arrowEl.style.transition = ms?`transform ${ms}ms ${ease}, opacity ${Math.min(ms,500)}ms ease`:'none';
+  arrowEl.style.transform  = `rotate(${HERO.angleDeg}deg) translateX(${dx}px)`;
+  arrowEl.style.opacity    = opacity;
+}
+
+/* ---------------- the shot sequence ---------------- */
+let firing=false, loopTimer=null;
+function fire(){
+  if(firing || reduced) return;
+  firing=true;
+
+  // 1 · NOCK — arrow ignites in place
+  setArrow(0,0);
+  requestAnimationFrame(()=>{
+    setArrow(0,1,420,'ease-out');
+
+    // 2 · DRAW — pull back, tension, glow charges
+    setTimeout(()=>{
+      stage.classList.add('tension');
+      setArrow(-drawPx,1,1350,'cubic-bezier(.3,.9,.4,1)');
+      charge.animate(
+        [{opacity:0,transform:'translate(-50%,-50%) scale(.2)'},
+         {opacity:.95,transform:'translate(-50%,-50%) scale(1)'}],
+        {duration:1550,easing:'ease-in',fill:'forwards'});
+    },480);
+
+    // 3 · HOLD — one breath at full draw
+    // 4 · RELEASE
+    setTimeout(()=>{
+      stage.classList.remove('tension');
+      stage.classList.add('recoil');
+
+      const flight = W*1.35;
+      setArrow(flight,1,520,'cubic-bezier(.55,0,.9,.4)');
+
+      trail.style.transition='none';
+      trail.style.opacity='1';
+      trail.style.width=(flight+shaftPx)+'px';
+      trail.style.transform=`rotate(${HERO.angleDeg}deg) scaleX(0)`;
+      requestAnimationFrame(()=>{
+        trail.style.transition='transform 520ms cubic-bezier(.55,0,.9,.4), opacity 700ms ease 260ms';
+        trail.style.transform=`rotate(${HERO.angleDeg}deg) scaleX(1)`;
+        trail.style.opacity='0';
+      });
+
+      charge.animate([{opacity:.95},{opacity:0}],{duration:260,fill:'forwards'});
+      flash.animate([{opacity:0},{opacity:1,offset:.15},{opacity:0}],{duration:640,easing:'ease-out'});
+      sparks();
+      if(navigator.vibrate) navigator.vibrate(18);
+
+      setTimeout(()=>{ stage.classList.remove('recoil'); },380);
+      setTimeout(()=>{ setArrow(0,0); firing=false; },1300);
+    },2450);
+  });
+}
+function sparks(){
+  const rad=HERO.angleDeg*Math.PI/180;
+  const ox=HERO.anchor.x*W, oy=HERO.anchor.y*H;
+  for(let i=0;i<12;i++){
+    const s=document.createElement('div');s.className='spark';
+    s.style.left=ox+'px';s.style.top=oy+'px';fx.appendChild(s);
+    const a=rad+(Math.random()-.5)*1.6, d=26+Math.random()*70;
+    s.animate(
+      [{transform:'translate(-50%,-50%)',opacity:1},
+       {transform:`translate(${Math.cos(a)*d-2}px,${Math.sin(a)*d-2}px)`,opacity:0}],
+      {duration:460+Math.random()*380,easing:'cubic-bezier(.2,.7,.4,1)'}
+    ).onfinish=()=>s.remove();
+  }
+}
+
+/* ---------------- ambient embers ---------------- */
+const cv=document.getElementById('embers'),ctx=cv.getContext('2d');let P=[];
+function seedEmbers(){
+  cv.width=W*devicePixelRatio;cv.height=H*devicePixelRatio;
+  ctx.setTransform(devicePixelRatio,0,0,devicePixelRatio,0,0);
+  P=Array.from({length:22},()=>({x:Math.random()*W,y:Math.random()*H,
+    r:.6+Math.random()*1.5,v:.08+Math.random()*.22,ph:Math.random()*6.28}));
+}
+function tick(t){
+  ctx.clearRect(0,0,W,H);
+  for(const p of P){
+    p.y-=p.v; if(p.y<-4){p.y=H+4;p.x=Math.random()*W;}
+    const a=.25+.45*Math.abs(Math.sin(t/900+p.ph));
+    ctx.beginPath();ctx.arc(p.x,p.y,p.r,0,6.28);
+    ctx.fillStyle=`rgba(255,214,150,${a})`;ctx.fill();
+  }
+  if(!reduced) requestAnimationFrame(tick);
+}
+
+/* ---------------- gyro parallax ---------------- */
+function enableGyro(){
+  addEventListener('deviceorientation',e=>{
+    if(e.gamma==null)return;
+    const x=Math.max(-1,Math.min(1,e.gamma/30)),y=Math.max(-1,Math.min(1,(e.beta-45)/30));
+    document.getElementById('heroWrap').style.translate=`${x*-7}px ${y*-5}px`;
+  });
+}
+document.body.addEventListener('click',()=>{
+  if(typeof DeviceOrientationEvent!=='undefined'&&DeviceOrientationEvent.requestPermission){
+    DeviceOrientationEvent.requestPermission().then(s=>{if(s==='granted')enableGyro();}).catch(()=>{});
+  }
+  fire();
+},{once:false});
+if(typeof DeviceOrientationEvent!=='undefined'&&!DeviceOrientationEvent.requestPermission)enableGyro();
+
+/* ---------------- boot ---------------- */
+heroImg.onload=()=>{
+  layout();seedEmbers();requestAnimationFrame(tick);
+  if(!reduced){
+    setTimeout(fire,HERO.firstShotMs);
+    loopTimer=setInterval(fire,HERO.loopMs);
+  }
+};
+addEventListener('resize',()=>{layout();seedEmbers();});
+</script>
+</body>
+</html>
