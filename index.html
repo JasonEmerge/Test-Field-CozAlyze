@@ -249,6 +249,11 @@
   #ampm span.sel { color:#2E1B14; background:linear-gradient(110deg,#A86F55 0%,#D6A986 28%,#E8C7A6 48%,#C99378 68%,#765044 100%);
     border-color:transparent; font-weight:700; }
   #timebar.done { opacity:0 !important; transform:translate(-50%,-30px) scale(.92); pointer-events:none !important; }
+  /* v19.50: back to the birthday step — rides with the bar through the keyboard lift */
+  #tm-back { position:absolute; top:calc(100% + 16px); left:50%; transform:translateX(-50%);
+    font-size:10px; letter-spacing:.3em; text-transform:uppercase; color:#B08A6E;
+    padding:8px 16px; cursor:pointer; white-space:nowrap; user-select:none; -webkit-user-select:none; }
+  #tm-back:active { color:#E8C7A6; }
   /* v18.8 gold prompt banners — exact fn-pill treatment, one above each birth field.
      They only mirror the bar's .show/.done classes; the bars and inputs are untouched. */
   .bd-prompt { position:fixed; left:50%; transform:translate(-50%, 24px); z-index:14;
@@ -413,7 +418,7 @@
   .gn-sphereArc { position:absolute; left:50%; top:46%; transform:translate(-50%,-50%);
     border:1px solid rgba(214,169,134,.09); border-radius:50%; pointer-events:none; }
   #genesis.show { opacity:1; pointer-events:auto; }
-  #gn-video { position:absolute; inset:0; width:100%; height:100%; object-fit:cover;
+  #gn-video { position:absolute; inset:0; width:100%; height:100%; object-fit:contain;
     background:#02020a; }
   #genesis .gn-title { z-index:2; text-shadow:0 2px 14px rgba(0,0,0,.85); }
   .gn-stage { position:absolute; inset:0; }   /* v19.1: full-viewport stage — JS coords are viewport pixels, so the swirl now plays centered */
@@ -510,6 +515,7 @@
   <input type="text" id="tm-typed" inputmode="numeric" autocomplete="off"
          placeholder="HH : MM" aria-label="Birth time" maxlength="7">
   <div id="ampm"><span data-v="AM">AM</span><span data-v="PM">PM</span></div>
+  <div id="tm-back">&#8249;&nbsp;&nbsp;Back</div>
 </div>
 <div id="systembar">
   <img class="emerge-wordmark sys-logo" alt="CozAlyze">
@@ -545,7 +551,7 @@
   </div>
 </div>
 
-<div id="ver">SCENE 1 · v19.49 · orrery film</div>
+<div id="ver">SCENE 1 · v19.50 · pulled back + back button</div>
 
 <script src="https://cdn.jsdelivr.net/npm/globe.gl"></script>
 <script src="https://cdn.jsdelivr.net/npm/astronomy-engine@2.1.19/astronomy.browser.min.js"></script>
@@ -1539,6 +1545,19 @@ function computeGenesisProfile(system){
   }
   function disarm(){ armed = null; pills().forEach(x => x.classList.remove('focus')); }
   bar.addEventListener('click', (ev) => { if (!ev.target.dataset.v) inp.focus(); });
+  // v19.50: back — clears the time step and reopens the birthday step for re-entry
+  document.getElementById('tm-back').addEventListener('click', (ev) => {
+    ev.stopPropagation();
+    inp.value = ''; ampm = null; disarm();
+    pills().forEach(x => x.classList.remove('sel'));
+    window.__birthTime = undefined;
+    const bd = document.getElementById('bd-typed');
+    bd.value = ''; window.__birthDate = undefined;
+    document.getElementById('timebar').classList.remove('show');
+    document.getElementById('bdaybar').classList.remove('done');
+    try { EMERGE_SOUND.play('pulse'); } catch(_){}
+    bd.focus({ preventScroll: true });
+  });
   pills().forEach(el => {
     el.addEventListener('click', () => {
       disarm();
