@@ -1,6 +1,6 @@
 # EMERGE — Sound v3 Deploy
 
-Stamps: SCENE 1 v19.53 keyboard stays up, SIDEREAL v19.23, TROPICAL v18.32. Routes ?v=1923 / ?v=1832, engine ?v=3.
+Stamps: SCENE 1 v19.54 commit holds still, SIDEREAL v19.23, TROPICAL v18.32. Routes ?v=1923 / ?v=1832, engine ?v=3.
 Deploy the WHOLE folder together, plus "Sidereal Solar System.mp4" and "Tropical Solar System .mp4"
 (exact names, note the space before .mp4 in the Tropical file) in the repo root.
 calc-sky.mp4 can stay in the repo but is no longer played. Verify the on-screen stamp before judging sound.
@@ -50,3 +50,10 @@ Scene 1 v19.53 — keyboard stays up:
   iPhone keyboard stays open and the visualViewport lift holds the prompt + HH:MM box
   in their raised position while AM/PM is chosen. AM still arms as the default; the
   pills stay tappable with the keyboard up; completion proceeds exactly as before.
+
+Scene 1 v19.54 — commit holds still:
+- The split-second drop after AM/PM was the keyboard-lift releasing its pinned position
+  the instant the time committed (blur + .done both trigger release). A hold-lift class
+  now freezes the Time panel exactly where it stands: the keyboard drops and the prompt
+  + HH:MM box dissolve in place, never snapping to the bottom, then the Earth exit and
+  Perspective Choice proceed exactly as before. Lift math, timings, and positions untouched.

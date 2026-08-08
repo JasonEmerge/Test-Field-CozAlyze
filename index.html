@@ -602,7 +602,7 @@
   </div>
 </div>
 
-<div id="ver">SCENE 1 · v19.53 · keyboard stays up</div>
+<div id="ver">SCENE 1 · v19.54 · commit holds still</div>
 
 <script src="https://cdn.jsdelivr.net/npm/globe.gl"></script>
 <script src="https://cdn.jsdelivr.net/npm/astronomy-engine@2.1.19/astronomy.browser.min.js"></script>
@@ -1711,6 +1711,11 @@ window.__setEntryStep = function(step) {
       console.log('[Birth data] time:', window.__birthTime);
       window.__setEntryStep('complete');
       try { EMERGE_SOUND.play('harmony'); } catch(_){}
+      // v19.54: freeze the panel exactly where it stands — the hold-lift class
+      // tells the keyboard-lift to keep the pinned position, so the keyboard
+      // dropping and the .done fade both happen with the prompt and box never
+      // moving. They dissolve in place, then the Earth exit proceeds as before.
+      document.getElementById('timebar').classList.add('hold-lift');
       inp.blur();
       setTimeout(() => {
         document.getElementById('timebar').classList.add('done');
@@ -1830,6 +1835,7 @@ window.__handleEntryBack = function() {
     }
   }
   function release(b){
+    if (b.bar.classList.contains('hold-lift')) return;   // v19.54: committed panel fades out in place, never snaps down
     b.bar.style.top = '';
     b.bar.style.bottom = '';
     b.bar.style.transform = '';
