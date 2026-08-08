@@ -1,7 +1,9 @@
 # EMERGE — Sound v3 Deploy
 
-Stamps: SCENE 1 v19.51 persistent back navigation, SIDEREAL v19.9, TROPICAL v18.18. Routes ?v=1909 / ?v=1818, engine ?v=3.
-Deploy the WHOLE folder together (22 files, plus calc-sky.mp4 in the repo root since v19.49). Verify the on-screen stamp before judging sound.
+Stamps: SCENE 1 v19.52 direct to reveal, SIDEREAL v19.23, TROPICAL v18.32. Routes ?v=1923 / ?v=1832, engine ?v=3.
+Deploy the WHOLE folder together, plus "Sidereal Solar System.mp4" and "Tropical Solar System .mp4"
+(exact names, note the space before .mp4 in the Tropical file) in the repo root.
+calc-sky.mp4 can stay in the repo but is no longer played. Verify the on-screen stamp before judging sound.
 
 v3 changes:
 1. Two-perspectives screen now has its own bed (19_two_perspectives.wav): the void hands off
@@ -24,3 +26,21 @@ Scene 1 v19.51 — persistent back navigation:
 - Backward navigation preserves entered values: date, time, and birthplace are never
   cleared by Back. Re-entering a value overwrites the saved one through the normal
   input handlers.
+
+Scene 1 v19.52 — direct to reveal (TEST BUILD):
+- The calculation scene has moved out of index.html: tapping a system card saves the
+  payload as before, then routes straight to the selected reveal page. Genesis code and
+  CSS remain in the file but are no longer called (easy rollback); calc-sky.mp4 is no
+  longer preloaded or played.
+- Each reveal file now opens with its own system-specific solar-system movie
+  (object-fit:contain, plays once, muted): Sidereal = classical grahas, Tropical =
+  includes the outer planets. "Calculating your sky" + cycling status lines sit over it.
+- Tap-to-reveal is gated: pointerdown does nothing until the movie has ended and faded.
+  Only the user's tap after that sets t0 and starts the existing chart timeline.
+  Fallbacks (autoplay rejection, video error, 12s watchdog) skip the intro rather than
+  trap the user.
+- Back → Date → Time fix: returning to a previously entered birth time highlights it,
+  so the first keystroke replaces it cleanly and the HH:MM field + AM/PM pills are fully
+  functional again.
+- Sound untouched this round: no audio files renamed, emerge-sound.js unmodified, the
+  old genesis calc loop simply no longer runs. Movie soundtrack sync comes later.

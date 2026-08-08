@@ -594,7 +594,7 @@
   </div>
 </div>
 <div id="genesis">
-  <video id="gn-video" src="calc-sky.mp4" muted playsinline loop preload="auto"></video>
+  <video id="gn-video" src="calc-sky.mp4" muted playsinline loop preload="none"></video>  <!-- v19.52: genesis bypassed, do not download -->
   <div class="gn-stage" id="gn-stage"></div>
   <div class="gn-title">
     <div class="t1">Calculating your sky</div>
@@ -602,7 +602,7 @@
   </div>
 </div>
 
-<div id="ver">SCENE 1 · v19.51 · persistent back navigation</div>
+<div id="ver">SCENE 1 · v19.52 · direct to reveal</div>
 
 <script src="https://cdn.jsdelivr.net/npm/globe.gl"></script>
 <script src="https://cdn.jsdelivr.net/npm/astronomy-engine@2.1.19/astronomy.browser.min.js"></script>
@@ -1637,7 +1637,12 @@ window.__setEntryStep = function(step) {
       // hand focus straight to the time field -- the keyboard never drops
       document.getElementById('bdaybar').classList.add('done');
       document.getElementById('timebar').classList.add('show');
-      document.getElementById('tm-typed').focus({ preventScroll: true });
+      const tmi = document.getElementById('tm-typed');
+      tmi.focus({ preventScroll: true });
+      // v19.52: Back -> Date -> Time fix — a previously entered time is
+      // highlighted so the first keystroke replaces it cleanly; the HH:MM
+      // field and AM/PM pills behave exactly like fresh entry.
+      if (tmi.value) { try { tmi.select(); } catch(_){} }
     }
   });
 })();
@@ -2149,17 +2154,15 @@ document.querySelectorAll('.syscard').forEach(card => {
     const sys = card.dataset.v;
     window.__zodiacSystem = sys;
     console.log('[EMERGE FLOW] 8. door tapped — system:', sys);
-    document.getElementById('systembar').style.display = 'none';
-    window.__genesisActive = true;
-    document.getElementById('genesis').classList.add('show');
+
+    // Prevent double-tapping while the payload is created.
+    document.getElementById('systembar').style.pointerEvents = 'none';
+
+    // KEEP the current astrology/profile calculation.
     try { window.EMERGE_PROFILE = computeGenesisProfile(sys); }
     catch(e){ window.EMERGE_PROFILE = null; console.log('[EMERGE FLOW] genesis profile skipped:', e); }
-    const stopGenesis = runGenesis();
-    try { EMERGE_SOUND.stopLoop('choice', 0.9); EMERGE_SOUND.loop('calc'); } catch(_){}
-    // v3: the calculation layer breathes out before the page turns —
-    // no hard cut into the reveal's held silence
-    setTimeout(() => { try { EMERGE_SOUND.stopLoop('calc', 1.9); } catch(_){} }, 2600);
 
+    // KEEP the current birth payload logic.
     const bp = window.__birthPlace || {};
     const tp = (window.__birthTime || '12:00 PM').split(/[: ]/);
     const utc = birthUTC(window.__birthDate, +tp[0], +tp[1],
@@ -2178,20 +2181,30 @@ document.querySelectorAll('.syscard').forEach(card => {
       system: sys
     };
     try { localStorage.setItem('emergeBirthData', JSON.stringify(payload)); } catch(_){}
-    try { if (window.parent !== window)
-      window.parent.postMessage({ type:'BIRTH_DATA_COMPLETE', payload }, '*'); } catch(_){}
+    try {
+      if (window.parent !== window) {
+        window.parent.postMessage({ type:'BIRTH_DATA_COMPLETE', payload:payload }, '*');
+      }
+    } catch(_){}
     console.log('[EMERGE FLOW] 9. BIRTH_DATA_COMPLETE — payload saved & posted:', payload);
-
-    setTimeout(() => {
-      if (stopGenesis) stopGenesis();
-      const next = sys === 'sidereal' ? 'sidereal-reveal.html?v=1922' : 'tropical-reveal.html?v=1831';   // v19.2: cache-bust — bump these with each reveal-file stamp
-      console.log('[EMERGE FLOW] 10. genesis complete — proceeding to', next);
-      try { EMERGE_SOUND.stopAll(); } catch(_){}
-      location.href = next;
-    }, 4600);
     console.log('[Birth data] complete:', {
-      place: bp.formatted, lat: bp.lat, lon: bp.lon, tz: bp.tz,
-      date: window.__birthDate, time: window.__birthTime, system: sys });
+      place:bp.formatted, lat:bp.lat, lon:bp.lon, tz:bp.tz,
+      date:window.__birthDate, time:window.__birthTime, system:sys });
+
+    /*
+      IMPORTANT:
+      THE OLD CALCULATION SCENE IS NO LONGER RUN HERE.
+      DO NOT: show #genesis, call runGenesis(), play calc-sky.mp4, wait 4600ms.
+      The calculation animation now belongs to the selected reveal page.
+    */
+
+    try { EMERGE_SOUND.stopLoop('choice', 0.25); } catch(_){}
+
+    const next = sys === 'sidereal'
+      ? 'sidereal-reveal.html?v=1923'
+      : 'tropical-reveal.html?v=1832';
+    console.log('[EMERGE FLOW] 10. routing directly to selected reveal:', next);
+    location.href = next;
   });
 });
 
