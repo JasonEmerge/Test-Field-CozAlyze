@@ -1,6 +1,6 @@
 # EMERGE — Sound v3 Deploy
 
-Stamps: SCENE 1 v19.54 commit holds still, SIDEREAL v19.23, TROPICAL v18.32. Routes ?v=1923 / ?v=1832, engine ?v=3.
+Stamps: SCENE 1 v19.55 pill tap holds, SIDEREAL v19.23, TROPICAL v18.32. Routes ?v=1923 / ?v=1832, engine ?v=3.
 Deploy the WHOLE folder together, plus "Sidereal Solar System.mp4" and "Tropical Solar System .mp4"
 (exact names, note the space before .mp4 in the Tropical file) in the repo root.
 calc-sky.mp4 can stay in the repo but is no longer played. Verify the on-screen stamp before judging sound.
@@ -57,3 +57,10 @@ Scene 1 v19.54 — commit holds still:
   now freezes the Time panel exactly where it stands: the keyboard drops and the prompt
   + HH:MM box dissolve in place, never snapping to the bottom, then the Earth exit and
   Perspective Choice proceed exactly as before. Lift math, timings, and positions untouched.
+
+Scene 1 v19.55 — pill tap holds:
+- The residual drop happened at the instant a finger touched AM/PM: iOS blurs the input
+  on touch and the keyboard begins closing before the click event commits the time, so
+  the v19.54 hold arrived too late. The hold-lift now lands on pointerdown of the pills
+  (with a safety release if the tap doesn't commit), so the panel is frozen before iOS
+  can move anything. Type time -> tap AM/PM -> nothing moves, panel dissolves in place.

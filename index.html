@@ -602,7 +602,7 @@
   </div>
 </div>
 
-<div id="ver">SCENE 1 · v19.54 · commit holds still</div>
+<div id="ver">SCENE 1 · v19.55 · pill tap holds</div>
 
 <script src="https://cdn.jsdelivr.net/npm/globe.gl"></script>
 <script src="https://cdn.jsdelivr.net/npm/astronomy-engine@2.1.19/astronomy.browser.min.js"></script>
@@ -1688,6 +1688,20 @@ window.__setEntryStep = function(step) {
   // move the armed cursor: swipe on the pills (phone) or arrow keys + Enter (desktop)
   let swX = null;
   const ampmBox = document.getElementById('ampm');
+  // v19.55: iOS blurs the input the moment a finger TOUCHES a pill — the
+  // keyboard starts closing and the lift can release before the click event
+  // ever runs finishIfComplete. So the hold now lands at first touch, ahead
+  // of anything iOS does. If the tap somehow doesn't commit, the hold is
+  // dropped after a beat and normal behavior returns.
+  ampmBox.addEventListener('pointerdown', () => {
+    const dig = inp.value.replace(/\D/g, '');
+    if (dig.length === 4 && !ampm) {
+      bar.classList.add('hold-lift');
+      setTimeout(() => {
+        if (window.__entryStep !== 'complete') bar.classList.remove('hold-lift');
+      }, 900);
+    }
+  }, { passive: true });
   ampmBox.addEventListener('touchstart', e => { swX = e.touches[0].clientX; }, { passive:true });
   ampmBox.addEventListener('touchmove', e => {
     if (swX == null || !armed || ampm) return;
