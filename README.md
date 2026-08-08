@@ -1,6 +1,6 @@
 # EMERGE — Sound v3 Deploy
 
-Stamps: SCENE 1 v19.52 direct to reveal, SIDEREAL v19.23, TROPICAL v18.32. Routes ?v=1923 / ?v=1832, engine ?v=3.
+Stamps: SCENE 1 v19.53 keyboard stays up, SIDEREAL v19.23, TROPICAL v18.32. Routes ?v=1923 / ?v=1832, engine ?v=3.
 Deploy the WHOLE folder together, plus "Sidereal Solar System.mp4" and "Tropical Solar System .mp4"
 (exact names, note the space before .mp4 in the Tropical file) in the repo root.
 calc-sky.mp4 can stay in the repo but is no longer played. Verify the on-screen stamp before judging sound.
@@ -44,3 +44,9 @@ Scene 1 v19.52 — direct to reveal (TEST BUILD):
   functional again.
 - Sound untouched this round: no audio files renamed, emerge-sound.js unmodified, the
   old genesis calc loop simply no longer runs. Movie soundtrack sync comes later.
+
+Scene 1 v19.53 — keyboard stays up:
+- Birth Time focus fix only: the fourth time digit no longer blurs the input, so the
+  iPhone keyboard stays open and the visualViewport lift holds the prompt + HH:MM box
+  in their raised position while AM/PM is chosen. AM still arms as the default; the
+  pills stay tappable with the keyboard up; completion proceeds exactly as before.

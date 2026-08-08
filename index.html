@@ -602,7 +602,7 @@
   </div>
 </div>
 
-<div id="ver">SCENE 1 · v19.52 · direct to reveal</div>
+<div id="ver">SCENE 1 · v19.53 · keyboard stays up</div>
 
 <script src="https://cdn.jsdelivr.net/npm/globe.gl"></script>
 <script src="https://cdn.jsdelivr.net/npm/astronomy-engine@2.1.19/astronomy.browser.min.js"></script>
@@ -1676,9 +1676,14 @@ window.__setEntryStep = function(step) {
     inp.value = out;
     finishIfComplete();
     if (dig.length === 4 && !ampm) {
-      inp.blur();                        // keyboard yields...
-      arm('AM');                         // ...and the cursor is already sitting on AM
-    } else if (dig.length < 4) disarm();
+      // v19.53: NO blur — the numeric keyboard stays open and the Time panel
+      // holds its raised position while the user chooses AM or PM. The AM pill
+      // arms as the default exactly as before; the pills are tappable with the
+      // keyboard up, and finishIfComplete() proceeds normally on commit.
+      arm('AM');
+    } else if (dig.length < 4) {
+      disarm();
+    }
   });
   // move the armed cursor: swipe on the pills (phone) or arrow keys + Enter (desktop)
   let swX = null;
