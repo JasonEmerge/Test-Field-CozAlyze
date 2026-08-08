@@ -602,7 +602,7 @@
   </div>
 </div>
 
-<div id="ver">SCENE 1 · v19.55 · pill tap holds</div>
+<div id="ver">SCENE 1 · v19.56 · one fixed geometry</div>
 
 <script src="https://cdn.jsdelivr.net/npm/globe.gl"></script>
 <script src="https://cdn.jsdelivr.net/npm/astronomy-engine@2.1.19/astronomy.browser.min.js"></script>
@@ -1688,20 +1688,6 @@ window.__setEntryStep = function(step) {
   // move the armed cursor: swipe on the pills (phone) or arrow keys + Enter (desktop)
   let swX = null;
   const ampmBox = document.getElementById('ampm');
-  // v19.55: iOS blurs the input the moment a finger TOUCHES a pill — the
-  // keyboard starts closing and the lift can release before the click event
-  // ever runs finishIfComplete. So the hold now lands at first touch, ahead
-  // of anything iOS does. If the tap somehow doesn't commit, the hold is
-  // dropped after a beat and normal behavior returns.
-  ampmBox.addEventListener('pointerdown', () => {
-    const dig = inp.value.replace(/\D/g, '');
-    if (dig.length === 4 && !ampm) {
-      bar.classList.add('hold-lift');
-      setTimeout(() => {
-        if (window.__entryStep !== 'complete') bar.classList.remove('hold-lift');
-      }, 900);
-    }
-  }, { passive: true });
   ampmBox.addEventListener('touchstart', e => { swX = e.touches[0].clientX; }, { passive:true });
   ampmBox.addEventListener('touchmove', e => {
     if (swX == null || !armed || ampm) return;
@@ -1725,11 +1711,6 @@ window.__setEntryStep = function(step) {
       console.log('[Birth data] time:', window.__birthTime);
       window.__setEntryStep('complete');
       try { EMERGE_SOUND.play('harmony'); } catch(_){}
-      // v19.54: freeze the panel exactly where it stands — the hold-lift class
-      // tells the keyboard-lift to keep the pinned position, so the keyboard
-      // dropping and the .done fade both happen with the prompt and box never
-      // moving. They dissolve in place, then the Earth exit proceeds as before.
-      document.getElementById('timebar').classList.add('hold-lift');
       inp.blur();
       setTimeout(() => {
         document.getElementById('timebar').classList.add('done');
@@ -1816,58 +1797,62 @@ window.__handleEntryBack = function() {
 };
 
 
-// ---------- v18.7 keyboard lift: the active birth panel rises above the iPhone keyboard ----------
-// Uses window.visualViewport (not 100vh) so iOS Safari's keyboard-shrunken viewport is
-// measured directly. While the birthday or time input is focused AND the keyboard is
-// actually open, the bar is pinned at ~42% of the visible height. When the step closes
-// or the keyboard drops, all inline overrides are cleared and the original bottom:35vh
-// layout returns untouched. Nothing else in the sequence is modified.
+// ---------- v19.56 fixed entry geometry: ONE locked position for the whole birth sequence ----------
+// The date bar, time bar, and both prompt banners are pinned to a single shared
+// geometry (~42% of the keyboard-open visual height) for the ENTIRE sequence.
+// Step changes are pure crossfades inside that fixed frame — nothing is released
+// between date and time, at AM/PM, or at commit. When the keyboard closes, the
+// last position is FROZEN in visual coordinates and re-applied on every
+// visualViewport pan (top = frozenCenter + vv.offsetTop), so the panel cannot
+// shift even one frame while the keyboard collapses. The pins release only when
+// the user backs out to the birthplace step (bars hidden), giving a clean slate.
 (function(){
   const vv = window.visualViewport;
   if (!vv) return;                                  // no visualViewport: original layout stands
-  const bars = [
+  const entries = [
     { bar: document.getElementById('bdaybar'), inp: document.getElementById('bd-typed'), prompt: document.getElementById('bdayPrompt') },
     { bar: document.getElementById('timebar'), inp: document.getElementById('tm-typed'), prompt: document.getElementById('timePrompt') }
   ];
   const KB_MIN = 120;                               // lost px that means the keyboard is open
-  const keyboardOpen = () => (window.innerHeight - vv.height) > KB_MIN;
-  const activeEntry = () =>
-    bars.find(b => b.bar.classList.contains('show') &&
-                   !b.bar.classList.contains('done') &&
-                   document.activeElement === b.inp) || null;
-  function lift(b){
-    const targetCenter = vv.offsetTop + vv.height * 0.42;
-    b.bar.style.top = targetCenter + 'px';
-    b.bar.style.bottom = 'auto';
-    b.bar.style.transform = 'translate(-50%, -50%)';
-    b.bar.style.zIndex = '1000';
-    if (b.prompt){
-      b.prompt.style.top = (targetCenter - 34) + 'px';   // banner bottom edge sits ~11px above the bar
-      b.prompt.style.bottom = 'auto';
-      b.prompt.style.transform = 'translate(-50%, -100%)';
-      b.prompt.style.zIndex = '1000';
-    }
+  const kbOpen = () => (window.innerHeight - vv.height) > KB_MIN;
+  let heldCenter = null;                            // frozen center in VISUAL coordinates
+
+  const seqActive = () =>
+    entries.some(b => b.bar.classList.contains('show') || b.bar.classList.contains('done')) &&
+    window.__entryStep !== 'location';
+
+  function applyAll(){
+    const topPx = heldCenter + vv.offsetTop;        // pan-compensated layout position
+    entries.forEach(b => {
+      b.bar.style.top = topPx + 'px';
+      b.bar.style.bottom = 'auto';
+      b.bar.style.transform = 'translate(-50%, -50%)';
+      b.bar.style.zIndex = '1000';
+      if (b.prompt){
+        b.prompt.style.top = (topPx - 34) + 'px';   // banner bottom edge sits ~11px above the bar
+        b.prompt.style.bottom = 'auto';
+        b.prompt.style.transform = 'translate(-50%, -100%)';
+        b.prompt.style.zIndex = '1000';
+      }
+    });
   }
-  function release(b){
-    if (b.bar.classList.contains('hold-lift')) return;   // v19.54: committed panel fades out in place, never snaps down
-    b.bar.style.top = '';
-    b.bar.style.bottom = '';
-    b.bar.style.transform = '';
-    b.bar.style.zIndex = '';
-    if (b.prompt){
-      b.prompt.style.top = '';
-      b.prompt.style.bottom = '';
-      b.prompt.style.transform = '';
-      b.prompt.style.zIndex = '';
-    }
+  function releaseAll(){
+    entries.forEach(b => {
+      b.bar.style.top = ''; b.bar.style.bottom = ''; b.bar.style.transform = ''; b.bar.style.zIndex = '';
+      if (b.prompt){
+        b.prompt.style.top = ''; b.prompt.style.bottom = ''; b.prompt.style.transform = ''; b.prompt.style.zIndex = '';
+      }
+    });
   }
   function position(){
-    const a = activeEntry();
-    bars.forEach(b => { if (a === b && keyboardOpen()) lift(b); else release(b); });
+    if (!seqActive()){ heldCenter = null; releaseAll(); return; }
+    if (kbOpen()) heldCenter = vv.height * 0.42;    // live position while the keyboard is up
+    if (heldCenter != null) applyAll();             // keyboard closed: frozen, pan-compensated
+    // keyboard never opened yet in this pass: bars keep their natural CSS position
   }
   vv.addEventListener('resize', position);
   vv.addEventListener('scroll', position);
-  bars.forEach(b => {
+  entries.forEach(b => {
     b.inp.addEventListener('focus', () => { position(); setTimeout(position, 60); setTimeout(position, 300); });
     b.inp.addEventListener('blur',  () => setTimeout(position, 60));
     // .show / .done arrive from the flow code; reposition the moment they land
