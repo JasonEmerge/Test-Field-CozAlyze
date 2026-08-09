@@ -594,15 +594,6 @@
   position:absolute; inset:0; width:100%; height:100%;
   object-fit:contain; object-position:center center; background:#02020a;
 }
-/* 9-frame assembly prelude — full frames swapped on one img, covering the movie until handoff */
-#calcAssembly {
-  position:absolute; inset:0; width:100%; height:100%; z-index:1;
-  object-fit:contain; object-position:center center; background:#02020a;
-}
-#calcAssembly.pulse { animation:calcPop .18s ease-out; }
-@keyframes calcPop { from { opacity:.55; transform:scale(1.012); }
-                     to   { opacity:1;   transform:scale(1); } }
-@media (prefers-reduced-motion: reduce){ #calcAssembly.pulse { animation:none; } }
 #systemCalculationCopy {
   position:absolute; left:0; right:0;
   bottom:max(calc(env(safe-area-inset-bottom, 0px) + 28px), 7vh);
@@ -622,8 +613,7 @@
 </head>
 <body>
 <div id="systemCalculationIntro">
-  <video id="systemCalculationVideo" src="Sidereal Solar System.mp4" muted playsinline preload="auto"></video>
-  <img id="calcAssembly" alt="" aria-hidden="true">
+  <video id="systemCalculationVideo" src="Sidereal Solar System.mp4" muted playsinline autoplay preload="auto"></video>
   <div id="systemCalculationCopy">
     <div class="calc-main">Calculating your sky</div>
     <div id="systemCalculationStatus">Consulting the ephemeris…</div>
@@ -791,7 +781,7 @@ var BIRTH = __ok ? {
 console.log('[EMERGE FLOW] 5. sidereal-reveal — system in storage:',
             SAVED && SAVED.system, '| data:', __ok ? 'user birth data' : 'QA fallback');
 document.getElementById('stamp').textContent =
-  'SIDEREAL v19.24 assembly · LAHIRI · d1 · data:' + ((SAVED && SAVED.system) || 'none');
+  'SIDEREAL v19.23 dash · LAHIRI · d1 · data:' + ((SAVED && SAVED.system) || 'none');
 
 var DEG = Math.PI/180, RAD = 180/Math.PI;
 
@@ -1481,95 +1471,27 @@ function armExistingRevealGate(){
     finishIntro('video-error');
   }, { once:true });
 
-  // ============================================================
-  // 9-FRAME ASSEMBLY PRELUDE — bodies materialize one by one,
-  // then the EXISTING solar-system movie starts immediately.
-  // The movie, its end handling, and everything after are unchanged.
-  // ============================================================
-  var assemblyImg = document.getElementById('calcAssembly');
-  var FRAME_SRCS = [
-    'calc-frame-01.jpg', 'calc-frame-02.jpg', 'calc-frame-03.jpg',
-    'calc-frame-04.jpg', 'calc-frame-05.jpg', 'calc-frame-06.jpg',
-    'calc-frame-07.jpg', 'calc-frame-08.jpg', 'calc-frame-09.jpg'
-  ];
-  // Earth ~280ms, each new body ~320ms, final arrangement ~180ms → ~3s total
-  var FRAME_HOLD = [280, 320, 320, 320, 320, 320, 320, 320, 180];
-
-  function startExistingVideo(reason){
-    console.log('[EMERGE FLOW] assembly prelude done — starting solar-system movie:', reason);
-    try { video.currentTime = 0; } catch(_){}
-    try {
-      var playback = video.play();
-      if (playback && playback.catch){
-        playback.catch(function(err){
-          console.log('[EMERGE FLOW] muted video autoplay rejected:', err);
-          finishIntro('autoplay-rejected');
-        });
-      }
-    } catch(err){
-      console.log('[EMERGE FLOW] calculation video exception:', err);
-      finishIntro('playback-exception');
+  try {
+    video.currentTime = 0;
+    var playback = video.play();
+    if (playback && playback.catch){
+      playback.catch(function(err){
+        console.log('[EMERGE FLOW] muted video autoplay rejected:', err);
+        finishIntro('autoplay-rejected');
+      });
     }
-    // The movie is live beneath the storyboard — drop the img on the next frame, no pause.
-    window.requestAnimationFrame(function(){
-      if (assemblyImg && assemblyImg.parentNode){ assemblyImg.remove(); }
-      assemblyImg = null;
-    });
+  } catch(err){
+    console.log('[EMERGE FLOW] calculation video exception:', err);
+    finishIntro('playback-exception');
   }
-
-  function runCalcAssembly(){
-    if (!assemblyImg){ startExistingVideo('no-assembly-element'); return; }
-    var loaded  = [];
-    var preload = [];
-    var settled = 0;
-    var started = false;
-
-    function begin(){
-      if (started){ return; }
-      started = true;
-      var order = [];
-      for (var i = 0; i < FRAME_SRCS.length; i++){ if (loaded[i]){ order.push(i); } }
-      // Whole sequence failed → fall straight into the existing animation. Never trap the user.
-      if (!order.length){ startExistingVideo('all-frames-failed'); return; }
-      var k = 0;
-      function show(){
-        var idx = order[k];
-        assemblyImg.src = preload[idx].src;
-        assemblyImg.classList.remove('pulse');
-        void assemblyImg.offsetWidth;               /* restart the pulse */
-        assemblyImg.classList.add('pulse');
-        var hold = FRAME_HOLD[idx];
-        k++;
-        if (k < order.length){ window.setTimeout(show, hold); }
-        else { window.setTimeout(function(){ startExistingVideo('assembly-finished'); }, hold); }
-      }
-      show();
-    }
-
-    // Preload all nine before starting so there are no flashes or gaps.
-    FRAME_SRCS.forEach(function(src, i){
-      var im = new Image();
-      preload[i] = im;
-      im.onload  = function(){ loaded[i] = true;
-        settled++; if (settled === FRAME_SRCS.length){ begin(); } };
-      im.onerror = function(){ console.log('[EMERGE FLOW] assembly frame failed, skipping:', src);
-        settled++; if (settled === FRAME_SRCS.length){ begin(); } };
-      im.src = src;
-    });
-    // Slow network guard: after 4s play whatever has arrived rather than waiting.
-    window.setTimeout(begin, 4000);
-  }
-
-  runCalcAssembly();
 
   // EMERGENCY FALLBACK ONLY. Normal timing comes from video.ended.
-  // (12s → 15s: the ~3s assembly prelude now runs before the movie.)
   window.setTimeout(function(){
     if (!finished){
       console.log('[EMERGE FLOW] calculation-video watchdog');
       finishIntro('watchdog');
     }
-  }, 15000);
+  }, 12000);
 })();
 
 function frame(now){
