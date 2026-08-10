@@ -189,7 +189,7 @@
   <a href="#"><svg viewBox="0 0 24 24"><circle cx="12" cy="8.5" r="3.5"/><path d="M5 19.5c1.2-3.4 3.9-5 7-5s5.8 1.6 7 5"/></svg>Account</a>
 </nav>
 
-<div id="stamp">ASCENDANT · v1.2 · pricing entry</div>
+<div id="stamp">ASCENDANT · v1.3 · unlock wired</div>
 
 <script>
 /* =====================================================================
@@ -335,7 +335,7 @@ function start(){
 
   if (hasParamAsc && directMode){
     blackBeatThenPlay(300);
-  } else if (hasParamAsc){
+  } else if (hasParamAsc && qs.get('flow') !== 'full'){
     playTransition();
   } else {
     // full funnel demo: pricing (choose order) → [payment skipped] →

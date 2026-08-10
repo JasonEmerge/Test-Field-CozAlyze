@@ -749,7 +749,7 @@ var BIRTH = __ok ? {
 console.log('[EMERGE FLOW] 5. sidereal-reveal — system in storage:',
             SAVED && SAVED.system, '| data:', __ok ? 'user birth data' : 'QA fallback');
 document.getElementById('stamp').textContent =
-  'SIDEREAL v19.25 no-intro · LAHIRI · d1 · data:' + ((SAVED && SAVED.system) || 'none');
+  'SIDEREAL v19.26 unlock funnel · LAHIRI · d1 · data:' + ((SAVED && SAVED.system) || 'none');
 
 var DEG = Math.PI/180, RAD = 180/Math.PI;
 
@@ -2653,11 +2653,13 @@ function openCompleteChartResult(){
     window.dispatchEvent(new CustomEvent('EMERGE_FREE_SUMMARY_COMPLETE'));
   }, REDUCED ? 0 : 650);
 }
-/* ===== v19.22: UNLOCK -> DASHBOARD FINALE =====
-   Both unlock prompts now end on the new dashboard page: the current
-   screen sinks away and the CozAlyze dashboard rises in as the last
-   part of the animation. Listens on the existing unlock event so both
-   buttons (summary CTA + result page) trigger it unchanged. */
+/* ===== v19.26: UNLOCK -> ASCENDANT FUNNEL =====
+   Both unlock prompts now leave the reading and enter the purchase funnel:
+   the current screen sinks away, then the browser hands off to
+   ascendant.html (pricing page -> Sidereal dashboard -> page-turn ->
+   Rising-sign animation -> Inner Compass page), carrying the user's
+   calculated Sidereal Ascendant so the correct sign plays.
+   The v19.22 dashboard-image overlay below is retired but kept for rollback. */
 var DASH_SRC = 'dashboard.jpeg?v=1';
 var dashOverlay = null, dashStarted = false;
 function buildDashOverlay(){
@@ -2675,17 +2677,15 @@ function startUnlockTransition(){
   if (dashStarted) return;
   dashStarted = true;
   try { EMERGE_SOUND.play('impact'); EMERGE_SOUND.haptic(10); } catch(_){}
-  var ov = buildDashOverlay();
   bodyEl.classList.add('unlock-leaving');
+  var ascName = (SIGNS[ascSign] || 'Cancer').toLowerCase();
   window.setTimeout(function(){
-    ov.classList.add('is-visible');
-    ov.scrollTop = 0;
-    console.log('[EMERGE FLOW] 9. unlock -> dashboard finale');
-  }, REDUCED ? 0 : 550);
+    console.log('[EMERGE FLOW] 9. unlock -> ascendant funnel (' + ascName + ')');
+    window.location.href = 'ascendant.html?flow=full&asc=' + ascName + '&v=13';
+  }, REDUCED ? 0 : 650);
 }
 window.addEventListener('EMERGE_UNLOCK_READING_REQUESTED', startUnlockTransition);
-window.setTimeout(function(){ try { (new Image()).src = DASH_SRC; } catch(_){} }, 4000);  /* preload after the drawing settles */
-/* ===== END v19.22: UNLOCK -> DASHBOARD FINALE ===== */
+/* ===== END v19.26: UNLOCK -> ASCENDANT FUNNEL ===== */
 
 unlockBtn.addEventListener('click', function(){
   window.dispatchEvent(new CustomEvent('EMERGE_UNLOCK_READING_REQUESTED'));
