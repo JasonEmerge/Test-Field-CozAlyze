@@ -22,6 +22,17 @@
     -webkit-font-smoothing:antialiased;overscroll-behavior:none}
   body.locked{overflow:hidden;height:100dvh}
 
+  /* ---------- demo pricing screen (order choice, precedes payment) ---------- */
+  #pricing{position:fixed;inset:0;z-index:62;background:#05070c;display:none;
+    overflow-y:auto;-webkit-overflow-scrolling:touch}
+  #pricing.on{display:block}
+  #pricing .pwrap{position:relative;width:100%}
+  #pricing img{width:100%;display:block}
+  #pricing .hot{position:absolute;left:39%;top:52.3%;width:26%;height:4.2%;
+    background:transparent;border:0;cursor:pointer}
+  #pricing .hot::after{content:"";position:absolute;inset:-6px;border:1px solid rgba(201,161,94,.55);
+    border-radius:10px;animation:breathe 2.4s ease-in-out infinite}
+
   /* ---------- demo dashboard shell (removed in production integration) ---------- */
   #shell{position:fixed;inset:0;z-index:60;background:#000;display:none;overflow:hidden}
   #shell.on{display:block}
@@ -117,6 +128,16 @@
 </head>
 <body class="locked">
 
+<!-- DEMO ONLY: pricing page where the user chooses their order. In production
+     this is its own live page; tapping Sidereal Chart goes to payment, and after
+     payment the user lands on the Sidereal dashboard. The demo skips payment. -->
+<div id="pricing">
+  <div class="pwrap">
+    <img src="pricing.jpg" alt="">
+    <button class="hot" id="buySidereal" aria-label="Sidereal Chart $49"></button>
+  </div>
+</div>
+
 <!-- DEMO SHELL ONLY: stands in for the live dashboard while this page is tested
      standalone. In production the dashboard performs its own page-turn and
      opens ascendant.html?asc=<sign>&direct=1 — this block never renders then. -->
@@ -125,7 +146,7 @@
   <div class="hint">Tap to reveal your essence</div>
 </div>
 
-<div id="transit"><video id="transitVid" src="transition.mp4" muted playsinline preload="auto"></video></div>
+<div id="transit"><video id="transitVid" muted playsinline preload="auto"></video></div>
 <div id="veil"></div>
 
 <div id="hero"><video id="signVid" muted playsinline preload="auto"></video></div>
@@ -168,7 +189,7 @@
   <a href="#"><svg viewBox="0 0 24 24"><circle cx="12" cy="8.5" r="3.5"/><path d="M5 19.5c1.2-3.4 3.9-5 7-5s5.8 1.6 7 5"/></svg>Account</a>
 </nav>
 
-<div id="stamp">ASCENDANT · v1 · inner compass</div>
+<div id="stamp">ASCENDANT · v1.2 · pricing entry</div>
 
 <script>
 /* =====================================================================
@@ -292,6 +313,9 @@ const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
 
 const directMode = qs.get('direct') === '1';
 const hasParamAsc = !!qs.get('asc');
+const settledMode = qs.get('settled') === '1';   // QA shortcut: final page instantly
+const fromPage = qs.get('from');                 // picks the page-turn clip per origin page
+tVid.src = fromPage ? 'transition-' + fromPage + '.mp4' : 'transition.mp4';
 
 /* ---------- flow ---------- */
 function start(){
@@ -299,12 +323,29 @@ function start(){
   if (S.loop) sVid.loop = true;
   sVid.load();
 
+  if (settledMode){
+    hero.classList.add('playing');
+    const jump = once(() => { settled = false; settle(); });
+    sVid.addEventListener('loadedmetadata', jump);
+    if (sVid.readyState >= 1) jump();
+    setTimeout(jump, 2500);
+    sVid.play().catch(()=>{});
+    return;
+  }
+
   if (hasParamAsc && directMode){
     blackBeatThenPlay(300);
   } else if (hasParamAsc){
     playTransition();
   } else {
-    shell.classList.add('on');
+    // full funnel demo: pricing (choose order) → [payment skipped] →
+    // Sidereal dashboard → tap → page-turn → sequence
+    const pricing = document.getElementById('pricing');
+    pricing.classList.add('on');
+    document.getElementById('buySidereal').addEventListener('pointerdown', () => {
+      pricing.classList.remove('on');
+      shell.classList.add('on');
+    }, { once:true });
     shell.addEventListener('pointerdown', () => {   // EMERGE_SOUND hook: reveal tap
       shell.classList.remove('on');
       playTransition();
@@ -319,6 +360,7 @@ function playTransition(){
     blackBeatThenPlay(650);                          // brief hold on black
   });
   tVid.addEventListener('ended', done);
+  tVid.addEventListener('error', done);
   tVid.play().catch(done);
   setTimeout(done, 8000);                            // watchdog
 }
@@ -336,17 +378,27 @@ function playSign(){
   const arm = once(scheduleSettle);
   sVid.addEventListener('loadedmetadata', arm);
   if (sVid.readyState >= 1) arm();
+  sVid.addEventListener('error', () => settle());    // missing/broken clip: settle over black
   sVid.play().catch(() => settle());                 // playback blocked: settle immediately
-  setTimeout(() => { if (!settled) settle(); }, 15000); // emergency watchdog
+  setTimeout(() => { if (!settled) settle(); }, 9000);  // emergency watchdog
 }
 
 let settled = false;
 function scheduleSettle(){
+  const dur = (sVid.duration && isFinite(sVid.duration)) ? sVid.duration : 5;
   if (S.loop){
     // looping clips keep looping under the risen page; settle after one pass
-    setTimeout(settle, Math.max(1000, (sVid.duration || 5) * 1000));
+    setTimeout(settle, Math.max(1000, dur * 1000));
   } else {
     sVid.addEventListener('ended', settle, { once:true }); // holds final frame
+    // iOS belt and braces: some Safari builds delay or drop 'ended'
+    sVid.addEventListener('timeupdate', function te(){
+      if (sVid.currentTime >= dur - 0.15){
+        sVid.removeEventListener('timeupdate', te);
+        settle();
+      }
+    });
+    setTimeout(() => { if (!settled) settle(); }, dur * 1000 + 1500);
   }
 }
 
