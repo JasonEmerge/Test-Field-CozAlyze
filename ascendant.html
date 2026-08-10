@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<title>Your Ascendant</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;0,700;1,500&family=EB+Garamond:ital,wght@0,400;0,500;1,400&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0b0f16;
+    --gold:#c9a15e;
+    --gold-dim:#8f7343;
+    --champagne:#e9d7ae;
+    --ivory:#ddd3c2;
+    --hairline:rgba(201,161,94,.28);
+    --nav-h:64px;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{background:var(--bg);color:var(--ivory);font-family:'EB Garamond',Georgia,serif;
+    -webkit-font-smoothing:antialiased;overscroll-behavior:none}
+  body.locked{overflow:hidden;height:100dvh}
+
+  /* ---------- demo dashboard shell (removed in production integration) ---------- */
+  #shell{position:fixed;inset:0;z-index:60;background:#000;display:none;overflow:hidden}
+  #shell.on{display:block}
+  #shell img{width:100%;height:100%;object-fit:contain;display:block}
+  #shell .hint{position:absolute;left:0;right:0;bottom:max(18px,env(safe-area-inset-bottom));
+    text-align:center;font-size:12px;letter-spacing:.28em;color:var(--gold);opacity:.65;
+    text-transform:uppercase;animation:breathe 2.6s ease-in-out infinite}
+  @keyframes breathe{0%,100%{opacity:.35}50%{opacity:.8}}
+
+  /* ---------- transition + black beat ---------- */
+  #transit{position:fixed;inset:0;z-index:55;background:#000;display:none}
+  #transit.on{display:block}
+  #transit video{width:100%;height:100%;object-fit:cover;display:block}
+  #veil{position:fixed;inset:0;z-index:54;background:#000;opacity:0;pointer-events:none;
+    transition:opacity .7s ease}
+  #veil.on{opacity:1;pointer-events:auto}
+
+  /* ---------- hero (sign animation) ---------- */
+  #hero{position:fixed;top:0;left:0;right:0;height:100dvh;z-index:20;background:#000;
+    display:flex;align-items:center;justify-content:center;overflow:hidden;
+    will-change:height;transition:none}
+  #hero.settling{transition:height 1.9s cubic-bezier(.22,.61,.21,1)}
+  #hero video{width:100%;height:100%;object-fit:contain;display:block;opacity:0;
+    transition:opacity .9s ease}
+  #hero.playing video{opacity:1}
+
+  /* ---------- rising content panel ---------- */
+  #content{position:fixed;top:0;left:0;right:0;z-index:19;background:var(--bg);
+    transform:translateY(100dvh);will-change:transform;visibility:hidden}
+  #content.rising{visibility:visible;transition:transform 1.9s cubic-bezier(.22,.61,.21,1)}
+  body.done #hero{position:static;height:var(--settled-h)}
+  body.done #content{position:static;transform:none;visibility:visible;transition:none}
+
+  .wrap{max-width:640px;margin:0 auto;padding:34px 26px calc(var(--nav-h) + 46px)}
+
+  .eyebrow{display:flex;align-items:center;gap:14px;justify-content:center;
+    color:var(--champagne);font-size:14px;letter-spacing:.42em;text-transform:uppercase;
+    font-family:'Cormorant Garamond',serif;font-weight:600;padding-left:.42em}
+  .eyebrow::before,.eyebrow::after{content:"";flex:0 0 54px;height:1px;
+    background:linear-gradient(90deg,transparent,var(--hairline));}
+  .eyebrow::after{background:linear-gradient(90deg,var(--hairline),transparent)}
+  .eyebrow .dot{font-size:9px;color:var(--gold);letter-spacing:0;padding:0}
+
+  h1{font-family:'Cormorant Garamond',serif;font-weight:600;color:var(--champagne);
+    text-align:center;font-size:clamp(38px,11vw,54px);letter-spacing:.10em;
+    margin:10px 0 2px;padding-left:.10em;text-shadow:0 0 26px rgba(233,215,174,.18)}
+  .subtitle{display:flex;align-items:center;justify-content:center;gap:10px;
+    font-family:'Cormorant Garamond',serif;font-style:italic;font-weight:500;
+    color:var(--champagne);font-size:clamp(20px,5.6vw,26px)}
+  .subtitle .orn{color:var(--gold);font-style:normal;font-size:.62em;transform:translateY(1px)}
+  .head-rule{width:min(320px,72%);margin:20px auto 0;height:12px;position:relative}
+  .head-rule::before{content:"";position:absolute;left:0;right:0;top:5px;height:1px;
+    background:linear-gradient(90deg,transparent,var(--hairline) 18%,var(--hairline) 82%,transparent)}
+  .head-rule::after{content:"◆";position:absolute;left:50%;top:0;transform:translateX(-50%);
+    color:var(--gold);font-size:9px;background:var(--bg);padding:0 8px;line-height:12px}
+
+  section{margin-top:42px}
+  h2{font-family:'Cormorant Garamond',serif;font-weight:700;color:var(--gold);
+    font-size:19px;letter-spacing:.20em;text-transform:uppercase;margin-bottom:16px}
+  p{font-size:17.5px;line-height:1.62;color:var(--ivory);margin-bottom:16px;
+    text-shadow:0 1px 2px rgba(0,0,0,.5)}
+  p:last-child{margin-bottom:0}
+  .divider{margin:40px auto 0;width:100%;height:12px;position:relative}
+  .divider::before{content:"";position:absolute;left:0;right:0;top:5px;height:1px;
+    background:linear-gradient(90deg,transparent,var(--hairline) 20%,var(--hairline) 80%,transparent)}
+  .divider::after{content:"◆";position:absolute;left:50%;top:0;transform:translateX(-50%);
+    color:var(--gold);font-size:9px;background:var(--bg);padding:0 8px;line-height:12px}
+
+  /* ---------- bottom navigation ---------- */
+  #nav{position:fixed;left:0;right:0;bottom:0;z-index:40;height:calc(var(--nav-h) + env(safe-area-inset-bottom));
+    padding-bottom:env(safe-area-inset-bottom);
+    background:rgba(8,11,17,.86);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
+    border-top:1px solid rgba(201,161,94,.18);display:flex;opacity:0;pointer-events:none;
+    transition:opacity .8s ease}
+  body.done #nav{opacity:1;pointer-events:auto}
+  #nav a{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;
+    gap:4px;text-decoration:none;color:#8b8272;font-size:10.5px;letter-spacing:.06em;
+    font-family:'EB Garamond',serif}
+  #nav a svg{width:21px;height:21px;stroke:currentColor;fill:none;stroke-width:1.4;
+    stroke-linecap:round;stroke-linejoin:round}
+  #nav a.active{color:var(--gold)}
+
+  #stamp{position:fixed;right:8px;bottom:calc(var(--nav-h) + env(safe-area-inset-bottom) + 6px);
+    z-index:41;font-size:9px;letter-spacing:.08em;color:rgba(201,161,94,.34);
+    font-family:'EB Garamond',serif;pointer-events:none}
+
+  @media (prefers-reduced-motion: reduce){
+    #hero.settling{transition:none}
+    #content.rising{transition:none}
+    #shell .hint{animation:none}
+  }
+</style>
+</head>
+<body class="locked">
+
+<!-- DEMO SHELL ONLY: stands in for the live dashboard while this page is tested
+     standalone. In production the dashboard performs its own page-turn and
+     opens ascendant.html?asc=<sign>&direct=1 — this block never renders then. -->
+<div id="shell">
+  <img src="dashboard.jpg" alt="">
+  <div class="hint">Tap to reveal your essence</div>
+</div>
+
+<div id="transit"><video id="transitVid" src="transition.mp4" muted playsinline preload="auto"></video></div>
+<div id="veil"></div>
+
+<div id="hero"><video id="signVid" muted playsinline preload="auto"></video></div>
+
+<div id="content">
+  <div class="wrap">
+    <div class="eyebrow"><span>Your Ascendant</span></div>
+    <div style="text-align:center;color:var(--gold);font-size:10px;margin-top:6px">✦</div>
+    <h1 id="signTitle">CANCER RISING</h1>
+    <div class="subtitle"><span class="orn">❧</span><span id="subTitle">Your Inner Compass</span><span class="orn" style="transform:scaleX(-1) translateY(1px)">❧</span></div>
+    <div class="head-rule"></div>
+
+    <section>
+      <h2>The Essence of You</h2>
+      <p id="essenceShared"></p>
+      <p id="essenceSign"></p>
+    </section>
+    <div class="divider"></div>
+
+    <section>
+      <h2>Your Dharmic Path</h2>
+      <p id="dharmaShared"></p>
+      <p id="dharmaSign"></p>
+    </section>
+    <div class="divider"></div>
+
+    <section>
+      <h2>Sidereal Perspective</h2>
+      <p id="siderealA"></p>
+      <p id="siderealB"></p>
+    </section>
+  </div>
+</div>
+
+<nav id="nav">
+  <a href="#"><svg viewBox="0 0 24 24"><path d="M3 11.5 12 4l9 7.5"/><path d="M5.5 10v9h13v-9"/></svg>Home</a>
+  <a href="#" class="active"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="M12 3.5v17M3.5 12h17M6 6l12 12M18 6 6 18"/></svg>My Chart</a>
+  <a href="#"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="m15.5 8.5-2.2 5-4.8 2 2.2-5z"/></svg>Explore</a>
+  <a href="#"><svg viewBox="0 0 24 24"><path d="M7 4h10v16l-5-4-5 4z"/></svg>Saved</a>
+  <a href="#"><svg viewBox="0 0 24 24"><circle cx="12" cy="8.5" r="3.5"/><path d="M5 19.5c1.2-3.4 3.9-5 7-5s5.8 1.6 7 5"/></svg>Account</a>
+</nav>
+
+<div id="stamp">ASCENDANT · v1 · inner compass</div>
+
+<script>
+/* =====================================================================
+   SIDEREAL ASCENDANT / INNER COMPASS — one reusable template.
+   Sign resolution order:
+     1. ?asc=<sign> URL parameter
+     2. window.EMERGE_ASCENDANT
+     3. localStorage 'emergeAscendant'
+     4. demo shell fallback (cancer)
+   Modes:
+     ascendant.html                → demo dashboard shell → transition → sequence
+     ascendant.html?asc=leo        → transition video → sequence (hosted testing)
+     ascendant.html?asc=leo&direct=1 → sequence only (dashboard already played
+                                        its own page-turn before navigating here)
+   On settle the page dispatches EMERGE_ASCENDANT_SETTLED on window and
+   posts {type:'EMERGE_ASCENDANT_SETTLED', sign} to the parent frame.
+   Sound: no audio here; wire EMERGE_SOUND cues at the marked hooks.
+   ===================================================================== */
+
+const SHARED = {
+  essence: "In Vedic astrology, your Ascendant is not simply how you appear to others\u2014it is the doorway into your life. It describes the energy your soul naturally expresses, the path you instinctively follow, and the qualities you are here to develop.",
+  dharma: "Every Ascendant carries a unique Dharma\u2014a natural direction the soul is learning to embody.",
+  siderealA: "Unlike Tropical astrology, which often describes how your personality is expressed in the outer world, Sidereal astrology begins with the soul's orientation. Your Ascendant reveals the inner compass guiding your life's journey\u2014the deeper current beneath your choices, relationships, and experiences.",
+  siderealB: "It is less about who you appear to be, and more about who you are becoming."
+};
+
+const SIGNS = {
+  aries: {
+    title: "ARIES RISING", loop: false,
+    essence: "Aries Rising brings a bold, direct, and pioneering nature. You move through life by initiating rather than waiting. Courage, independence, and fresh beginnings become guiding themes, and your greatest strength is the willingness to act first, opening doors that others hesitate to approach and clearing a path they can follow.",
+    dharma: "With Aries Rising, your path is to lead through courage rather than force. You are here to refine raw instinct into clear purpose, learn patience without losing your fire, and discover that true victory uplifts everyone involved. As you master your own impulses, you naturally become an igniter of confidence in others."
+  },
+  taurus: {
+    title: "TAURUS RISING", loop: false,
+    essence: "Taurus Rising brings a steady, grounded, and quietly magnetic nature. You move through life by building rather than rushing. Stability, beauty, and lasting value become guiding themes, and your greatest strength is creating comfort and permanence, turning whatever you touch into something reliable, nourishing, and genuinely worth keeping.",
+    dharma: "With Taurus Rising, your path is to grow through devotion rather than attachment. You are here to cultivate patience, honor the natural pace of things, and discover that security ultimately lives within you. As you learn when to hold on and when to release, you naturally become a calming anchor for others."
+  },
+  gemini: {
+    title: "GEMINI RISING", loop: false,
+    essence: "Gemini Rising brings a curious, quick, and endlessly adaptable nature. You move through life by learning rather than settling. Ideas, connection, and exchange become guiding themes, and your greatest strength is translating between worlds, finding the words, questions, and perspectives that help people understand each other and themselves.",
+    dharma: "With Gemini Rising, your path is to seek depth rather than distraction. You are here to gather knowledge and shape it into wisdom, listen as skillfully as you speak, and discover that focus multiplies your gifts. As your many interests find their center, you naturally become a bridge between people and ideas."
+  },
+  cancer: {
+    title: "CANCER RISING", loop: false,
+    essence: "Cancer Rising brings a deeply intuitive, nurturing, and emotionally aware nature. You move through life by sensing rather than forcing. Home, belonging, family, and emotional security become guiding themes, and your greatest strength is creating spaces where people feel protected, understood, and genuinely cared for.",
+    dharma: "With Cancer Rising, your path is to lead through compassion rather than control. You are here to cultivate emotional wisdom, trust your intuition, and discover that true strength often comes through gentleness. As you create safety for yourself, you naturally become a source of comfort, healing, and stability for others."
+  },
+  leo: {
+    title: "LEO RISING", loop: false,
+    essence: "Leo Rising brings a warm, radiant, and naturally commanding nature. You move through life by inspiring rather than following. Creativity, dignity, and wholehearted expression become guiding themes, and your greatest strength is the light you carry into every room, reminding people of their own courage, beauty, and worth.",
+    dharma: "With Leo Rising, your path is to lead through generosity rather than recognition. You are here to develop authentic confidence, create from the heart, and discover that true royalty serves what it rules. As your light turns outward to warm others, you naturally become a source of encouragement and strength."
+  },
+  virgo: {
+    title: "VIRGO RISING", loop: false,
+    essence: "Virgo Rising brings a precise, thoughtful, and quietly devoted nature. You move through life by refining rather than accepting. Service, clarity, and craftsmanship become guiding themes, and your greatest strength is seeing what others miss, gently bringing order, healing, and improvement to everything and everyone you care for.",
+    dharma: "With Virgo Rising, your path is to serve through love rather than perfection. You are here to master discernment without harshness, offer your skill where it truly helps, and discover that wholeness matters more than flawlessness. As you grow gentler with yourself, you naturally become a healing presence for others."
+  },
+  libra: {
+    title: "LIBRA RISING", loop: true,
+    essence: "Libra Rising brings a graceful, fair, and relationship-centered nature. You move through life by harmonizing rather than dominating. Balance, beauty, and partnership become guiding themes, and your greatest strength is restoring peace, sensing what each moment needs and drawing people toward understanding, cooperation, and genuine connection.",
+    dharma: "With Libra Rising, your path is to create harmony rather than avoid conflict. You are here to develop inner balance, choose truth alongside kindness, and discover that real peace sometimes requires a courageous stand. As you find your own center, you naturally become a unifying force in every relationship."
+  },
+  scorpio: {
+    title: "SCORPIO RISING", loop: false,
+    essence: "Scorpio Rising brings an intense, perceptive, and deeply private nature. You move through life by penetrating rather than skimming the surface. Truth, transformation, and emotional depth become guiding themes, and your greatest strength is the power to face what others avoid, emerging from every trial stronger and wiser.",
+    dharma: "With Scorpio Rising, your path is to transform through trust rather than control. You are here to master your own depths, release what no longer serves you, and discover that vulnerability is a form of power. As you rise renewed from each passage, you naturally become a guide through others' darkness."
+  },
+  sagittarius: {
+    title: "SAGITTARIUS RISING", loop: false,
+    essence: "Sagittarius Rising brings an optimistic, adventurous, and truth-seeking nature. You move through life by aiming rather than wandering. Meaning, freedom, and higher understanding become guiding themes, and your greatest strength is the faith you carry forward, lifting people's eyes toward possibility and the larger purpose behind their lives.",
+    dharma: "With Sagittarius Rising, your path is to teach through living rather than preaching. You are here to pursue wisdom with humility, honor the truth within every tradition, and discover that the journey itself is the destination. As your vision matures, you naturally become a guide who inspires others onward."
+  },
+  capricorn: {
+    title: "CAPRICORN RISING", loop: false,
+    essence: "Capricorn Rising brings a disciplined, patient, and quietly ambitious nature. You move through life by climbing rather than leaping. Mastery, responsibility, and enduring achievement become guiding themes, and your greatest strength is the persistence to keep building when others stop, creating things that stand the test of time.",
+    dharma: "With Capricorn Rising, your path is to achieve through integrity rather than pressure. You are here to carry responsibility with grace, allow softness alongside strength, and discover that time is your ally rather than your judge. As you honor your own pace, you naturally become a mountain others can lean on."
+  },
+  aquarius: {
+    title: "AQUARIUS RISING", loop: true,
+    essence: "Aquarius Rising brings an original, visionary, and humanitarian nature. You move through life by questioning rather than conforming. Innovation, community, and the greater good become guiding themes, and your greatest strength is seeing what could be, carrying ideas from the future into the present for the benefit of all.",
+    dharma: "With Aquarius Rising, your path is to belong without losing yourself. You are here to honor your uniqueness, connect your vision to real human needs, and discover that the heart matters as much as the idea. As you bring warmth to your brilliance, you naturally become a light for collective change."
+  },
+  pisces: {
+    title: "PISCES RISING", loop: true,
+    essence: "Pisces Rising brings a gentle, imaginative, and deeply compassionate nature. You move through life by feeling rather than analyzing. Empathy, creativity, and spiritual connection become guiding themes, and your greatest strength is dissolving the walls between people, sensing the unspoken and offering understanding where the world offers judgment.",
+    dharma: "With Pisces Rising, your path is to serve through compassion rather than sacrifice. You are here to develop healthy boundaries, give form to your visions, and discover that sensitivity is strength when it is anchored. As you learn to stay present, you naturally become a sanctuary for weary hearts."
+  }
+};
+
+/* ---------- resolve the calculated Ascendant ---------- */
+const qs = new URLSearchParams(location.search);
+function resolveSign(){
+  const cands = [qs.get('asc'), window.EMERGE_ASCENDANT, localStorage.getItem('emergeAscendant')];
+  for (const c of cands){
+    if (c && SIGNS[String(c).toLowerCase().trim()]) return String(c).toLowerCase().trim();
+  }
+  return null;
+}
+const resolved = resolveSign();
+const sign = resolved || 'cancer';
+const S = SIGNS[sign];
+
+/* ---------- populate template ---------- */
+document.getElementById('signTitle').textContent = S.title;
+document.getElementById('essenceShared').textContent = SHARED.essence;
+document.getElementById('essenceSign').textContent  = S.essence;
+document.getElementById('dharmaShared').textContent = SHARED.dharma;
+document.getElementById('dharmaSign').textContent   = S.dharma;
+document.getElementById('siderealA').textContent    = SHARED.siderealA;
+document.getElementById('siderealB').textContent    = SHARED.siderealB;
+
+/* ---------- elements ---------- */
+const shell   = document.getElementById('shell');
+const transit = document.getElementById('transit');
+const tVid    = document.getElementById('transitVid');
+const veil    = document.getElementById('veil');
+const hero    = document.getElementById('hero');
+const sVid    = document.getElementById('signVid');
+const content = document.getElementById('content');
+const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+const directMode = qs.get('direct') === '1';
+const hasParamAsc = !!qs.get('asc');
+
+/* ---------- flow ---------- */
+function start(){
+  sVid.src = sign + '.mp4';
+  if (S.loop) sVid.loop = true;
+  sVid.load();
+
+  if (hasParamAsc && directMode){
+    blackBeatThenPlay(300);
+  } else if (hasParamAsc){
+    playTransition();
+  } else {
+    shell.classList.add('on');
+    shell.addEventListener('pointerdown', () => {   // EMERGE_SOUND hook: reveal tap
+      shell.classList.remove('on');
+      playTransition();
+    }, { once:true });
+  }
+}
+
+function playTransition(){
+  transit.classList.add('on');
+  const done = once(() => {
+    transit.classList.remove('on');
+    blackBeatThenPlay(650);                          // brief hold on black
+  });
+  tVid.addEventListener('ended', done);
+  tVid.play().catch(done);
+  setTimeout(done, 8000);                            // watchdog
+}
+
+function blackBeatThenPlay(ms){
+  veil.classList.add('on');
+  setTimeout(() => {
+    playSign();
+    setTimeout(() => veil.classList.remove('on'), 150);
+  }, ms);
+}
+
+function playSign(){
+  hero.classList.add('playing');
+  const arm = once(scheduleSettle);
+  sVid.addEventListener('loadedmetadata', arm);
+  if (sVid.readyState >= 1) arm();
+  sVid.play().catch(() => settle());                 // playback blocked: settle immediately
+  setTimeout(() => { if (!settled) settle(); }, 15000); // emergency watchdog
+}
+
+let settled = false;
+function scheduleSettle(){
+  if (S.loop){
+    // looping clips keep looping under the risen page; settle after one pass
+    setTimeout(settle, Math.max(1000, (sVid.duration || 5) * 1000));
+  } else {
+    sVid.addEventListener('ended', settle, { once:true }); // holds final frame
+  }
+}
+
+function settle(){
+  if (settled) return;
+  settled = true;
+
+  const vw = document.documentElement.clientWidth;
+  const ar = (sVid.videoWidth && sVid.videoHeight) ? sVid.videoWidth / sVid.videoHeight : 1.25;
+  const settledH = Math.round(vw / ar);
+  document.documentElement.style.setProperty('--settled-h', settledH + 'px');
+
+  const finish = once(() => {
+    document.body.classList.add('done');             // static flow, scroll unlocked
+    document.body.classList.remove('locked');
+    hero.classList.remove('settling');
+    content.classList.remove('rising');
+    hero.style.height = ''; content.style.transform = '';
+    window.dispatchEvent(new CustomEvent('EMERGE_ASCENDANT_SETTLED', { detail:{ sign } }));
+    if (window.parent !== window)
+      window.parent.postMessage({ type:'EMERGE_ASCENDANT_SETTLED', sign }, '*');
+  });
+
+  if (reduced){ finish(); return; }
+
+  // page rises from the bottom and pushes the animation upward — one motion
+  content.style.transform = 'translateY(' + window.innerHeight + 'px)';
+  content.classList.add('rising');
+  requestAnimationFrame(() => requestAnimationFrame(() => {
+    hero.classList.add('settling');
+    hero.style.height = settledH + 'px';
+    content.style.transform = 'translateY(' + settledH + 'px)';
+    // EMERGE_SOUND hook: page-rise cue
+  }));
+  content.addEventListener('transitionend', finish, { once:true });
+  setTimeout(finish, 2400);                          // safety
+}
+
+function once(fn){ let ran=false; return () => { if(!ran){ ran=true; fn(); } }; }
+
+start();
+</script>
+</body>
+</html>
